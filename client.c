@@ -1,3 +1,7 @@
+// client.c
+//  Modified client code from http://www.linuxhowtos.org/C_C++/socket.htm
+//  Alex Standke
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -42,20 +46,30 @@ int main(int argc, char *argv[])
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         error("ERROR connecting");
 
-    int i;
-    for (i = 0; i < 10; i++) {
-        printf("Please enter the message: ");
+    n = read(sockfd, buffer, 255);
+    printf("%s\n",buffer);
+    bzero(buffer,256);
+
+    printf("Please enter your name: ");
+    bzero(buffer,256);
+    fgets(buffer,255,stdin);
+    n = write(sockfd,buffer,strlen(buffer));
+    if (n < 0) 
+         error("ERROR writing to socket");
+    bzero(buffer,256);
+
+    while ( (n = read(sockfd, buffer, 255)) > 0 ) {
+        
+        printf("%s\n",buffer);
+        
+        printf("> ");
         bzero(buffer,256);
         fgets(buffer,255,stdin);
-        n = write(sockfd,buffer,strlen(buffer));
-        if (n < 0) 
-             error("ERROR writing to socket");
-        bzero(buffer,256);
-        n = read(sockfd,buffer,255);
-        if (n < 0) 
-             error("ERROR reading from socket");
-        printf("%s\n",buffer);
+        if (strlen(buffer) > 1) { // only write message if it contains more than a newline
+            n = write(sockfd,buffer,strlen(buffer));
+        }
     }
+
     close(sockfd);
     return 0;
 }
