@@ -19,6 +19,36 @@ void error(const char *msg)
     perror(msg);
     exit(0);
 }
+// Get new messages
+void read_data(const int sockfd) {
+    int count;
+    char buffer[256];
+    ioctl(sockfd, FIONREAD, &count);
+
+    // If there's new data, read it
+    if (count != 0) {
+        bzero(buffer,256);
+        read(sockfd, buffer, 255);
+        printf("%s\n",buffer);
+    }
+}
+
+// Collect a new message
+void write_data(const int sockfd) {
+    char buffer[256];
+    struct timeval wait_time;
+    
+    printf("> ");
+    bzero(buffer,256);
+    fgets(buffer,255,stdin);
+    if (strlen(buffer) > 1) { // only write message if it contains more than a newline
+        write(sockfd,buffer,strlen(buffer));
+        bzero(buffer,256);
+        wait_time.tv_sec = 0;    
+        wait_time.tv_usec = 7500;  
+        select(32, NULL, NULL, NULL, &wait_time);
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -77,28 +107,9 @@ int main(int argc, char *argv[])
 
     while ( 1 == 1 ) {
 
-        // Check and see if there is data waiting to be read
-        int count;
-        ioctl(sockfd, FIONREAD, &count);
-
-        // If there's new data, read it
-        if (count != 0) {
-            bzero(buffer,256);
-            n = read(sockfd, buffer, 255);
-            printf("%s\n",buffer);
-        }
+        read_data(sockfd);
         
-        // Collect a new message
-        printf("> ");
-        bzero(buffer,256);
-        fgets(buffer,255,stdin);
-        if (strlen(buffer) > 1) { // only write message if it contains more than a newline
-            n = write(sockfd,buffer,strlen(buffer));
-            bzero(buffer,256);
-            wait_time.tv_sec = 0;    
-            wait_time.tv_usec = 7500;  
-            select(32, NULL, NULL, NULL, &wait_time);
-        }
+        write_data(sockfd);
     }
 
     close(sockfd);
