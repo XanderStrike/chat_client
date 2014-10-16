@@ -1,6 +1,7 @@
 // client.c
-//  Modified client code from http://www.linuxhowtos.org/C_C++/socket.htm
+//  Heavily modified client code from http://www.linuxhowtos.org/C_C++/socket.htm
 //  Alex Standke
+//    https://github.com/XanderStrike/chat_client
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
     if (n < 0) 
          error("ERROR writing to socket");
     bzero(buffer,256);
-    
+
     pthread_t reader, writer;
     pthread_create( &reader, NULL, read_data, sockfd);
     pthread_create( &writer, NULL, write_data, sockfd);
