@@ -13,40 +13,51 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <netdb.h> 
+#include <pthread.h>
+#include <stdlib.h>
+
 
 void error(const char *msg)
 {
     perror(msg);
     exit(0);
 }
+
 // Get new messages
 void read_data(const int sockfd) {
-    int count;
-    char buffer[256];
-    ioctl(sockfd, FIONREAD, &count);
+    while (1 == 1) {
+        // printf("reading data");
 
-    // If there's new data, read it
-    if (count != 0) {
-        bzero(buffer,256);
-        read(sockfd, buffer, 255);
-        printf("%s\n",buffer);
+        int count;
+        char buffer[256];
+        ioctl(sockfd, FIONREAD, &count);
+
+        // If there's new data, read it
+        if (count != 0) {
+            bzero(buffer,256);
+            read(sockfd, buffer, 255);
+            printf("%s\n",buffer);
+        }
+        sleep(1);
     }
 }
 
 // Collect a new message
 void write_data(const int sockfd) {
-    char buffer[256];
-    struct timeval wait_time;
-    
-    printf("> ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    if (strlen(buffer) > 1) { // only write message if it contains more than a newline
-        write(sockfd,buffer,strlen(buffer));
+    while (1 == 1) {
+        char buffer[256];
+        struct timeval wait_time;
+        
+        printf("> ");
         bzero(buffer,256);
-        wait_time.tv_sec = 0;    
-        wait_time.tv_usec = 7500;  
-        select(32, NULL, NULL, NULL, &wait_time);
+        fgets(buffer,255,stdin);
+        if (strlen(buffer) > 1) { // only write message if it contains more than a newline
+            write(sockfd,buffer,strlen(buffer));
+            bzero(buffer,256);
+            wait_time.tv_sec = 0;    
+            wait_time.tv_usec = 7500;  
+            select(32, NULL, NULL, NULL, &wait_time);
+        }
     }
 }
 
@@ -105,12 +116,13 @@ int main(int argc, char *argv[])
     printf("%s\n",buffer);
     bzero(buffer,256);
 
-    while ( 1 == 1 ) {
+    pthread_t reader, writer;
 
-        read_data(sockfd);
-        
-        write_data(sockfd);
-    }
+    pthread_create( &reader, NULL, read_data, sockfd);
+    pthread_create( &writer, NULL, write_data, sockfd);
+
+    pthread_join( reader, NULL);
+    pthread_join( writer, NULL);
 
     close(sockfd);
     return 0;
