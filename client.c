@@ -25,6 +25,9 @@ void error(const char *msg)
 
 // Get new messages
 void read_data(const int sockfd) {
+    char messages[5000][255];
+    int messages_recorded = 0;
+
     while (1 == 1) {
         // printf("reading data");
 
@@ -36,9 +39,17 @@ void read_data(const int sockfd) {
         if (count != 0) {
             bzero(buffer,256);
             read(sockfd, buffer, 255);
-            printf("%s\n",buffer);
+            strcpy(messages[messages_recorded], buffer);
+            messages_recorded++;
+
+            // Print entire list of messages again
+            system("clear");
+            int i;
+            for(i = 0; i < messages_recorded; i++)
+            {
+               printf("%s", messages[i]);
+            }
         }
-        sleep(1);
     }
 }
 
@@ -97,9 +108,6 @@ int main(int argc, char *argv[])
     
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         error("ERROR connecting");
-
-    n = read(sockfd, buffer, 255);
-    printf("%s\n",buffer);
 
     printf("Please enter your name: ");
     bzero(buffer,256);
