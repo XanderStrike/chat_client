@@ -25,12 +25,10 @@ void error(const char *msg)
 
 // Get new messages
 void read_data(const int sockfd) {
-    char messages[5000][255];
+    char messages[1000][255]; // TODO - clear message log occasionally to avoid segfault
     int messages_recorded = 0;
 
-    while (1 == 1) {
-        // printf("reading data");
-
+    while (1) {
         int count;
         char buffer[256];
         ioctl(sockfd, FIONREAD, &count);
@@ -42,7 +40,7 @@ void read_data(const int sockfd) {
             strcpy(messages[messages_recorded], buffer);
             messages_recorded++;
 
-            // Print entire list of messages again
+            // Print list of messages again
             system("clear");
             int i;
             for(i = 0; i < messages_recorded; i++)
@@ -55,7 +53,7 @@ void read_data(const int sockfd) {
 
 // Collect a new message
 void write_data(const int sockfd) {
-    while (1 == 1) {
+    while (1) {
         char buffer[256];
         struct timeval wait_time;
         
@@ -65,9 +63,6 @@ void write_data(const int sockfd) {
         if (strlen(buffer) > 1) { // only write message if it contains more than a newline
             write(sockfd,buffer,strlen(buffer));
             bzero(buffer,256);
-            wait_time.tv_sec = 0;    
-            wait_time.tv_usec = 7500;  
-            select(32, NULL, NULL, NULL, &wait_time);
         }
     }
 }
@@ -116,19 +111,10 @@ int main(int argc, char *argv[])
     if (n < 0) 
          error("ERROR writing to socket");
     bzero(buffer,256);
-
-    wait_time.tv_sec = 0;    
-    wait_time.tv_usec = 7500;    
-    select(32, NULL, NULL, NULL, &wait_time);
-    n = read(sockfd, buffer, 255);
-    printf("%s\n",buffer);
-    bzero(buffer,256);
-
+    
     pthread_t reader, writer;
-
     pthread_create( &reader, NULL, read_data, sockfd);
     pthread_create( &writer, NULL, write_data, sockfd);
-
     pthread_join( reader, NULL);
     pthread_join( writer, NULL);
 
