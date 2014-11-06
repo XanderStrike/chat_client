@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
   int sockfd, newsockfd, portno;
   socklen_t clilen;
   char buffer[256];
+  char message[512];
   struct sockaddr_in serv_addr, cli_addr;
   int n;
 
@@ -70,15 +71,14 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < FD_SETSIZE; i++) {
       if (FD_ISSET(i, &read_fd_set)) {
-        if (i == sockfd) { // new connection
+        
+        // new connection
+        if (i == sockfd) {
           int new;
           size = sizeof (clientname);
-          new = accept (sockfd,
-                              (struct sockaddr *) &clientname,
-                              &size);
+          new = accept (sockfd, (struct sockaddr *) &clientname, &size);
           if (new < 0) {
-            perror ("accept");
-            exit (EXIT_FAILURE);
+            error("ERROR in accept");
           }
           fprintf (stderr,
                    "Server: connect from host %i, port %hd.\n",
@@ -86,19 +86,48 @@ int main(int argc, char *argv[])
                    ntohs (clientname.sin_port));
           FD_SET (new, &active_fd_set);
 
-        } else { // new message from existing connection
+        } 
+
+        // New message from existing connection
+        else {
           bzero(buffer, 256);
+          bzero(message, 512);
+
+          // EOF or whatever, close the socket
           if (read (i, buffer, 256) <= 0) {
+            strcpy(message, usernames[i]);
+            strcat(message, " left the room\n");
             close (i);
+            strcpy(usernames[i], "thisisnotsetwow");
             FD_CLR (i, &active_fd_set);
-          } else {
+          } 
+
+          // We got some data!
+          else {
+            // It's a new user
             if (strcmp(usernames[i], "thisisnotsetwow") == 0) {
               strcpy(usernames[i], strtok(buffer, "\n"));
-              fprintf (stderr, "%s joined the room\n", buffer);
-            } else {
-              fprintf (stderr, "%s: %s", usernames[i], buffer);
+              strcpy(message, usernames[i]);
+              strcat(message, " joined the room\n");
+            }
+
+            // Just a new message
+            else {
+              strcpy(message, usernames[i]);
+              strcat(message, ": ");
+              strcat(message, buffer);
             }
           }
+
+          // Now we send 'message' to all clients, and print it out so the server is useful
+          fprintf(stderr, "%s", message);
+
+          // int n;
+          // for (n = 0; n < FD_SETSIZE; n++) {
+          //   if (FD_ISSET(n, &active_fd_set)) {
+              write(i,message,512);
+            // }
+          // }
         }
       }
     }
