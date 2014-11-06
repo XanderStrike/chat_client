@@ -16,31 +16,6 @@ void error(const char *msg)
   exit(1);
 }
 
-// int read_from_client (int filedes, char *usernames)
-// {
-//   char buffer[256];
-//   int nbytes;
-//   char name;
-
-//   nbytes = read (filedes, buffer, 256);
-//   if (nbytes < 0) {
-//     error("ERROR in read");
-//   }
-//   else if (nbytes == 0)
-//     return -1;
-//   else
-//   {
-//     // name = usernames[filedes];
-//     if (usernames[filedes] == NULL) {
-//       fprintf (stderr, "%s joined the room", buffer);
-//       strcpy(&usernames[0], buffer);
-//     } else {
-//       fprintf (stderr, "%s: %s", name, buffer);  
-//     }
-//     return 0;
-//   }
-// }
-
 int main(int argc, char *argv[])
 {
   int sockfd, newsockfd, portno;
@@ -76,9 +51,12 @@ int main(int argc, char *argv[])
   struct sockaddr_in clientname;
   socklen_t size;
   int nbytes;
-  char usernames[10000][20];
+  char usernames[1000][20];
   char name;
 
+  for (i = 0; i < 1000; i++) {
+    strcpy(usernames[i], "thisisnotsetwow");
+  }
 
 
   FD_ZERO (&active_fd_set);
@@ -114,18 +92,16 @@ int main(int argc, char *argv[])
             close (i);
             FD_CLR (i, &active_fd_set);
           } else {
-            if (usernames[i] == NULL) {
-              fprintf (stderr, "%s joined the room", buffer);
-              strcpy(usernames[i], buffer);
+            if (strcmp(usernames[i], "thisisnotsetwow") == 0) {
+              strcpy(usernames[i], strtok(buffer, "\n"));
+              fprintf (stderr, "%s joined the room\n", buffer);
             } else {
-              fprintf (stderr, "new message %s", buffer);
-              fprintf (stderr, "%s", usernames[i]);
+              fprintf (stderr, "%s: %s", usernames[i], buffer);
             }
           }
         }
       }
     }
-
   }
 
 
