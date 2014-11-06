@@ -9,11 +9,18 @@ The port number is passed as an argument */
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <stdbool.h>
 
 void error(const char *msg)
 {
   perror(msg);
   exit(1);
+}
+
+bool starts_with(const char *a, const char *b)
+{
+   if(strncmp(a, b, strlen(b)) == 0) return 1;
+   return 0;
 }
 
 int main(int argc, char *argv[])
@@ -104,6 +111,7 @@ int main(int argc, char *argv[])
 
           // We got some data!
           else {
+            
             // It's a new user
             if (strcmp(usernames[i], "thisisnotsetwow") == 0) {
               strcpy(usernames[i], strtok(buffer, "\n"));
@@ -113,9 +121,39 @@ int main(int argc, char *argv[])
 
             // Just a new message
             else {
-              strcpy(message, usernames[i]);
-              strcat(message, ": ");
-              strcat(message, buffer);
+
+              // Any server commands?
+              if (starts_with(buffer, "/ping")) {
+                fprintf(stderr, "Ping from %s\n", usernames[i]);
+                write(i,"Pong\n",5);
+                continue;
+              }
+
+              else if (starts_with(buffer, "/who")) {
+                fprintf(stderr, "%s uses /who\n", usernames[i]);
+                strcpy(message, "Users online:\n");
+                for (n = 0; n < 1000; n++) {
+                  if (strcmp(usernames[n], "thisisnotsetwow") != 0) {
+                    strcat(message, usernames[n]);
+                    strcat(message, "\n");
+                  }
+                }
+                write(i,message,512);
+                continue;
+              }
+
+              else if (starts_with(buffer, "/me")) {
+                strcpy(message, usernames[i]);
+                strcat(message, " ");
+                memmove(buffer, buffer+4, strlen(buffer) - 4 + 1);
+                strcat(message, buffer);
+              }
+
+              else {
+                strcpy(message, usernames[i]);
+                strcat(message, ": ");
+                strcat(message, buffer);
+              }
             }
           }
 
