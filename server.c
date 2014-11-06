@@ -16,28 +16,30 @@ void error(const char *msg)
   exit(1);
 }
 
-int read_from_client (int filedes)
-{
-  char buffer[1024];
-  int nbytes;
+// int read_from_client (int filedes, char *usernames)
+// {
+//   char buffer[256];
+//   int nbytes;
+//   char name;
 
-  nbytes = read (filedes, buffer, 1024);
-  if (nbytes < 0)
-  {
-/* Read error. */
-    perror ("read");
-    exit (EXIT_FAILURE);
-  }
-  else if (nbytes == 0)
-/* End-of-file. */
-    return -1;
-  else
-  {
-/* Data read. */
-    fprintf (stderr, "Server: got message: `%s'\n", buffer);
-    return 0;
-  }
-}
+//   nbytes = read (filedes, buffer, 256);
+//   if (nbytes < 0) {
+//     error("ERROR in read");
+//   }
+//   else if (nbytes == 0)
+//     return -1;
+//   else
+//   {
+//     // name = usernames[filedes];
+//     if (usernames[filedes] == NULL) {
+//       fprintf (stderr, "%s joined the room", buffer);
+//       strcpy(&usernames[0], buffer);
+//     } else {
+//       fprintf (stderr, "%s: %s", name, buffer);  
+//     }
+//     return 0;
+//   }
+// }
 
 int main(int argc, char *argv[])
 {
@@ -73,6 +75,11 @@ int main(int argc, char *argv[])
   int i;
   struct sockaddr_in clientname;
   socklen_t size;
+  int nbytes;
+  char usernames[10000][20];
+  char name;
+
+
 
   FD_ZERO (&active_fd_set);
   FD_SET (sockfd, &active_fd_set);
@@ -102,9 +109,18 @@ int main(int argc, char *argv[])
           FD_SET (new, &active_fd_set);
 
         } else { // new message from existing connection
-          if (read_from_client (i) < 0) {
+          bzero(buffer, 256);
+          if (read (i, buffer, 256) <= 0) {
             close (i);
             FD_CLR (i, &active_fd_set);
+          } else {
+            if (usernames[i] == NULL) {
+              fprintf (stderr, "%s joined the room", buffer);
+              strcpy(usernames[i], buffer);
+            } else {
+              fprintf (stderr, "new message %s", buffer);
+              fprintf (stderr, "%s", usernames[i]);
+            }
           }
         }
       }
