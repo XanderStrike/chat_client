@@ -121,11 +121,8 @@ int main(int argc, char *argv[])
 
           // Now we send 'message' to all clients, and print it out so the server is useful
           fprintf(stderr, "%s", message);
-
-          int n;
           for (n = 0; n < FD_SETSIZE; n++) {
             if (FD_ISSET(n, &active_fd_set) && n != sockfd) {
-              fprintf(stderr, "FD: %i", n);
               write(n,message,512);
             }
           }
