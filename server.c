@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 {
   int sockfd, newsockfd, portno;
   socklen_t clilen;
-  char buffer[256];
+  char buffer[512];
   char message[512];
   struct sockaddr_in serv_addr, cli_addr;
   int n;
@@ -43,18 +43,20 @@ int main(int argc, char *argv[])
     fprintf(stderr,"ERROR, no port provided\n");
     exit(1);
   }
+
+  fprintf(stderr, "Server: CS140 Chat server, initializing on port %s...\n", argv[1]);
+
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) 
     error("ERROR opening socket");
+
   bzero((char *) &serv_addr, sizeof(serv_addr));
   portno = atoi(argv[1]);
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
   serv_addr.sin_port = htons(portno);
-  if (bind(sockfd, (struct sockaddr *) &serv_addr,
-    sizeof(serv_addr)) < 0) 
+  if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
     error("ERROR on binding");
-
 
   listen(sockfd,5);
 
@@ -74,6 +76,8 @@ int main(int argc, char *argv[])
   FD_ZERO (&active_fd_set);
   FD_SET (sockfd, &active_fd_set);
 
+  fprintf(stderr, "Server: Ready.\n");
+
   while (1) {
     read_fd_set = active_fd_set;
 
@@ -82,6 +86,7 @@ int main(int argc, char *argv[])
       error("ERROR in select");
     }
 
+    // Iterate through active connections
     for (i = 0; i < FD_SETSIZE; i++) {
       if (FD_ISSET(i, &read_fd_set)) {
         
@@ -103,11 +108,11 @@ int main(int argc, char *argv[])
 
         // New message from existing connection
         else {
-          bzero(buffer, 256);
+          bzero(buffer, 512);
           bzero(message, 512);
 
           // EOF or whatever, close the socket
-          if (read (i, buffer, 256) <= 0) {
+          if (read (i, buffer, 512) <= 0) {
             strcpy(message, usernames[i]);
             strcat(message, " left the room\n");
             close (i);
@@ -130,13 +135,13 @@ int main(int argc, char *argv[])
 
               // Any server commands?
               if (starts_with(buffer, "/ping")) {
-                fprintf(stderr, "Ping from %s\n", usernames[i]);
+                fprintf(stderr, "Server: Ping from %s\n", usernames[i]);
                 write(i,"Pong\n",5);
                 continue;
               }
 
               else if (starts_with(buffer, "/who")) {
-                fprintf(stderr, "%s uses /who\n", usernames[i]);
+                fprintf(stderr, "Server: %s uses /who\n", usernames[i]);
                 strcpy(message, "Users online:\n");
                 for (n = 0; n < 1000; n++) {
                   if (strcmp(usernames[n], "thisisnotsetwow") != 0) {
@@ -145,14 +150,24 @@ int main(int argc, char *argv[])
                   }
                 }
                 write(i,message,512);
-                continue;
+                continue; // Just send list to user who asked for it
               }
 
-              else if (starts_with(buffer, "/me")) {
+              else if (starts_with(buffer, "/me ")) {
                 strcpy(message, usernames[i]);
                 strcat(message, " ");
                 memmove(buffer, buffer+4, strlen(buffer) - 4 + 1);
                 strcat(message, buffer);
+              }
+
+              else if (starts_with(buffer, "/killserver") && strcmp(usernames[i], "xander") == 0) {
+                for (n = 0; n < FD_SETSIZE; n++) {
+                  if (FD_ISSET(n, &active_fd_set) && n != sockfd) {
+                    write(n,"Server shutting down...\n",512);
+                    close (n);
+                  }
+                }
+                error("Shutting down...");
               }
 
               // Regular old message
@@ -175,7 +190,6 @@ int main(int argc, char *argv[])
       }
     }
   }
-
 
   close(sockfd);
   return 0; 
