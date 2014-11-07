@@ -1,7 +1,11 @@
-/* A simple server in the internet domain using TCP
-The port number is passed as an argument */
+// server.c
+//  Heavily modified server code from 
+//        - http://www.linuxhowtos.org/C_C++/socket.htm
+//        - http://www.gnu.org/software/libc/manual/html_node/Server-Example.html
+//
+//  Alex Standke
+//    https://github.com/XanderStrike/chat_client
 
-// http://www.gnu.org/software/libc/manual/html_node/Server-Example.html
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -72,6 +76,8 @@ int main(int argc, char *argv[])
 
   while (1) {
     read_fd_set = active_fd_set;
+
+    // Flex select muscle
     if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
       error("ERROR in select");
     }
@@ -79,7 +85,7 @@ int main(int argc, char *argv[])
     for (i = 0; i < FD_SETSIZE; i++) {
       if (FD_ISSET(i, &read_fd_set)) {
         
-        // new connection
+        // New connection
         if (i == sockfd) {
           int new;
           size = sizeof (clientname);
@@ -111,7 +117,7 @@ int main(int argc, char *argv[])
 
           // We got some data!
           else {
-            
+
             // It's a new user
             if (strcmp(usernames[i], "thisisnotsetwow") == 0) {
               strcpy(usernames[i], strtok(buffer, "\n"));
@@ -149,6 +155,7 @@ int main(int argc, char *argv[])
                 strcat(message, buffer);
               }
 
+              // Regular old message
               else {
                 strcpy(message, usernames[i]);
                 strcat(message, ": ");
@@ -157,7 +164,7 @@ int main(int argc, char *argv[])
             }
           }
 
-          // Now we send 'message' to all clients, and print it out so the server is useful
+          // Now we send 'message' to all clients
           fprintf(stderr, "%s", message);
           for (n = 0; n < FD_SETSIZE; n++) {
             if (FD_ISSET(n, &active_fd_set) && n != sockfd) {
