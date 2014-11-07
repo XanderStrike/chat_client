@@ -128,46 +128,59 @@ int main(int argc, char *argv[])
               strcpy(usernames[i], strtok(buffer, "\n"));
               strcpy(message, usernames[i]);
               strcat(message, " joined the room\n");
+              write(i, "Welcome to the CS140 Chat Server, type /h for help.\n", 512);
             }
 
             // Just a new message
             else {
 
               // Any server commands?
-              if (starts_with(buffer, "/ping")) {
-                fprintf(stderr, "Server: Ping from %s\n", usernames[i]);
-                write(i,"Pong\n",5);
-                continue;
-              }
-
-              else if (starts_with(buffer, "/who")) {
-                fprintf(stderr, "Server: %s uses /who\n", usernames[i]);
-                strcpy(message, "Users online:\n");
-                for (n = 0; n < 1000; n++) {
-                  if (strcmp(usernames[n], "thisisnotsetwow") != 0) {
-                    strcat(message, usernames[n]);
-                    strcat(message, "\n");
-                  }
+              if (starts_with(buffer, "/")) {
+                if (starts_with(buffer, "/ping")) {
+                  fprintf(stderr, "Server: Ping from %s\n", usernames[i]);
+                  write(i,"Pong!\n",6);
+                  continue; // Just send message to user who asked for it
                 }
-                write(i,message,512);
-                continue; // Just send list to user who asked for it
-              }
 
-              else if (starts_with(buffer, "/me ")) {
-                strcpy(message, usernames[i]);
-                strcat(message, " ");
-                memmove(buffer, buffer+4, strlen(buffer) - 4 + 1);
-                strcat(message, buffer);
-              }
-
-              else if (starts_with(buffer, "/killserver") && strcmp(usernames[i], "xander") == 0) {
-                for (n = 0; n < FD_SETSIZE; n++) {
-                  if (FD_ISSET(n, &active_fd_set) && n != sockfd) {
-                    write(n,"Server shutting down...\n",512);
-                    close (n);
+                else if (starts_with(buffer, "/who")) {
+                  fprintf(stderr, "Server: %s uses /who\n", usernames[i]);
+                  strcpy(message, "Users online:\n");
+                  for (n = 0; n < 1000; n++) {
+                    if (strcmp(usernames[n], "thisisnotsetwow") != 0) {
+                      strcat(message, usernames[n]);
+                      strcat(message, "\n");
+                    }
                   }
+                  write(i,message,512);
+                  continue;
                 }
-                error("Shutting down...");
+
+                else if (starts_with(buffer, "/me ")) {
+                  strcpy(message, usernames[i]);
+                  strcat(message, " ");
+                  memmove(buffer, buffer+4, strlen(buffer) - 4 + 1);
+                  strcat(message, buffer);
+                }
+
+                else if (starts_with(buffer, "/killserver") && strcmp(usernames[i], "xander") == 0) {
+                  for (n = 0; n < FD_SETSIZE; n++) {
+                    if (FD_ISSET(n, &active_fd_set) && n != sockfd) {
+                      write(n,"Server shutting down...\n",512);
+                      close (n);
+                    }
+                  }
+                  error("Shutting down...");
+                }
+
+                else {
+                  strcpy(message, "Server: Commands available:\n");
+                  strcat(message, " /ping\t\tPong!\n");
+                  strcat(message, " /who\t\tShows connected users.\n");
+                  strcat(message, " /me <message>\tDo actions to yourself.\n");
+                  strcat(message, " /killserver\tKill the server (admin only).\n");
+                  write(i,message,512);
+                  continue;
+                }
               }
 
               // Regular old message
