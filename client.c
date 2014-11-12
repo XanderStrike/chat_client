@@ -16,6 +16,8 @@
 #include <netdb.h> 
 #include <pthread.h>
 #include <stdlib.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 
 void error(const char *msg)
@@ -48,6 +50,9 @@ void read_data(const int sockfd) {
             {
                printf("%s", messages[i]);
             }
+
+            // Redisplay composed message
+            rl_forced_update_display();
         }
     }
 }
@@ -55,16 +60,20 @@ void read_data(const int sockfd) {
 // Collect a new message
 void write_data(const int sockfd) {
     while (1) {
-        char buffer[256];
         struct timeval wait_time;
         
-        printf("> ");
-        bzero(buffer,256);
-        fgets(buffer,255,stdin);
-        if (strlen(buffer) > 1) { // only write message if it contains more than a newline
-            write(sockfd,buffer,strlen(buffer));
-            bzero(buffer,256);
+        // printf("> ");
+        char *line = readline ("> ");
+        if (strlen(line) > 1) { // only write message if it contains more than a newline
+            // Any client commands?
+            if (strcmp(line, "/quit") == 0) {
+                fprintf(stderr, "Goodbye.\n");
+                exit(0);
+            }
+            strcat(line, "\n");
+            write(sockfd,line,strlen(line));
         }
+        free(line);
     }
 }
 
