@@ -51,6 +51,8 @@ void read_data(const int sockfd) {
                printf("%s", messages[i]);
             }
 
+            printf("%i", messages_recorded);
+
             // Redisplay composed message
             rl_forced_update_display();
         }
@@ -62,12 +64,12 @@ void write_data(const int sockfd) {
     while (1) {
         struct timeval wait_time;
         
-        // printf("> ");
         char *line = readline ("> ");
-        if (strlen(line) > 1) { // only write message if it contains more than a newline
+        if (strlen(line) > 0) {
             // Any client commands?
             if (strcmp(line, "/quit") == 0) {
                 fprintf(stderr, "Goodbye.\n");
+                close(sockfd);
                 exit(0);
             }
             strcat(line, "\n");
