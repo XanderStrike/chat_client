@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-
+#include <stdbool.h>
 
 void error(const char *msg)
 {
@@ -26,10 +26,17 @@ void error(const char *msg)
     exit(0);
 }
 
+bool starts_with(const char *a, const char *b)
+{
+   if(strncmp(a, b, strlen(b)) == 0) return 1;
+   return 0;
+}
+
 // Get new messages
 void read_data(const int sockfd) {
     char messages[1000][255]; // TODO - clear message log occasionally to avoid segfault
     int messages_recorded = 0;
+
 
     while (1) {
         int count;
@@ -51,8 +58,6 @@ void read_data(const int sockfd) {
                printf("%s", messages[i]);
             }
 
-            printf("%i", messages_recorded);
-
             // Redisplay composed message
             rl_forced_update_display();
         }
@@ -67,11 +72,13 @@ void write_data(const int sockfd) {
         char *line = readline ("> ");
         if (strlen(line) > 0) {
             // Any client commands?
-            if (strcmp(line, "/quit") == 0) {
+            if (starts_with(line, ".q")) {
                 fprintf(stderr, "Goodbye.\n");
                 close(sockfd);
                 exit(0);
             }
+
+            // Send the message then
             strcat(line, "\n");
             write(sockfd,line,strlen(line));
         }
